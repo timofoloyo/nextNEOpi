@@ -29,3 +29,6 @@ conf/params_icbi.config
 assets/hlahdenv.yml
 bin/make_release.sh
 test.nf
+data/
+.license_accepted.chck
+results/
