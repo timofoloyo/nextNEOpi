@@ -1,0 +1,15 @@
+# conda ENV for immunogenicity score calculation
+name: rigscore
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=3.6.3
+  - r-reshape2
+  - r-caret
+  - r-peptides
+  - r-doparallel
+  - r-gbm
+  - pandas

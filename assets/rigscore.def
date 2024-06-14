@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%files
+    rigscore.yml /rigscore.yml
+
+%post
+ apt-get update && apt-get install -y \
+    procps \
+    patch
+
+    export LANG=C.UTF-8 LC_ALL=C.UTF-8
+    export PATH=/opt/conda/bin:$PATH
+
+    micromamba install --yes --name base --file /rigscore.yml
+
+    rm -f /rigscore.yml
+
+    apt-get clean
+    micromamba clean --all --yes
+
+%environment
+    export LANG=C.UTF-8 LC_ALL=C.UTF-8
+    export PATH=/opt/conda/bin:$PATH
