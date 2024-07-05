@@ -1,0 +1,1 @@
+NXF_VER=22.10.8 nextflow run nextNEOpi.nf --batchFile conf/test_batchFile_FASTQ.csv -config conf/params.config -work-dir /data/work -profile singularity --accept_license --dag
