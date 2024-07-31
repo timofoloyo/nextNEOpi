@@ -1,1 +1,13 @@
+# previous utilization with singularity
 NXF_VER=22.10.8 nextflow run nextNEOpi.nf --batchFile conf/test_batchFile_FASTQ.csv -config conf/params.config -work-dir /data/work -profile singularity --accept_license --dag
+
+# with manual env
+NXF_VER=22.10.8 nextflow run nextNEOpi.nf --batchFile conf/test_batchFile_FASTQ.csv -config conf/params.config -work-dir /data/work -profile manual --accept_license --dag --CNVkit false
+
+# manual env setup
+mamba env create -p /home/dev/manual_conda_envs/${tools}
+mamba activate /home/dev/manual_conda_envs/${tools}
+mamba search ${tools}
+mamba install ${tools}
+mamba list
+mamba env export > /home/dev/manual_conda_envs/${tools}.yml
