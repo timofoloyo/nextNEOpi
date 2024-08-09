@@ -349,14 +349,15 @@ if (! have_HLAHD && run_OptiType) {
 // check if all tools are installed when not running conda or singularity
 have_vep = false
 if (! workflow.profile.contains('conda') && ! workflow.profile.contains('singularity')) {
-    def execTools = ["fastqc", "fastp", "bwa", "samtools", "sambamba", "gatk", "vep", "bam-readcount",
-                     "perl", "bgzip", "tabix", "bcftools", "yara_mapper", "python", "cnvkit.py",
-                     "OptiTypePipeline.py", "alleleCounter", "freec", "Rscript", "java", "multiqc",
-                     "sequenza-utils"]
+    // for manual mode, do not check tools availability;
+    // def execTools = ["fastqc", "fastp", "bwa", "samtools", "sambamba", "gatk", "vep", "bam-readcount",
+    //                  "perl", "bgzip", "tabix", "bcftools", "yara_mapper", "python", "cnvkit.py",
+    //                  "OptiTypePipeline.py", "alleleCounter", "freec", "Rscript", "java", "multiqc",
+    //                  "sequenza-utils"]
 
-    for (tool in execTools) {
-        checkToolAvailable(tool, "inPath", "error")
-    }
+    // for (tool in execTools) {
+    //     checkToolAvailable(tool, "inPath", "error")
+    // }
 
     VARSCAN = "java -jar " + file(params.VARSCAN)
     have_vep = true
@@ -548,7 +549,7 @@ process merge_fastq {
 if (params.WES) {
     process 'RegionsBedToIntervalList' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag 'RegionsBedToIntervalList'
 
@@ -576,7 +577,24 @@ if (params.WES) {
 
         script:
         def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
+        // def RefDict_test = reference.RefDict
+        // def RegionsBed_test = reference.RegionsBed
+        // // def Regionsinterval_test = "/data/resources/ExomeCaptureKits/Agilent/hg38/S07604514_Regions.interval_list"
+        // def Regionsinterval_test = "./S07604514_Regions.interval_list"
+        // """
+        // echo "hhha" > hha.txt
+        // gatk --version > gatk.txt
+        // gatk --java-options ${JAVA_Xmx} BedToIntervalList \\
+        //     -I ${RegionsBed_test} \\
+        //     -O ${Regionsinterval_test} \\
+        //     -SD $RefDict_test
+        // """
+        // export ADDR2LINE=\$(/home/dev/manual_conda_envs/nextNEOpiENV/bin/x86_64-conda-linux-gnu-addr2line)
+        // export AR=\$(/home/dev/manual_conda_envs/nextNEOpiENV/bin/x86_64-conda-linux-gnu-ar)
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         gatk --java-options ${JAVA_Xmx} BedToIntervalList \\
             -I ${RegionsBed} \\
             -O ${RegionsBed.baseName}.interval_list \\
@@ -586,7 +604,7 @@ if (params.WES) {
 
     process 'BaitsBedToIntervalList' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag 'BaitsBedToIntervalList'
 
@@ -611,7 +629,15 @@ if (params.WES) {
 
         script:
         def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
+        // def ADDR2LINE = "/home/dev/manual_conda_envs/nextNEOpiENV/bin/x86_64-conda-linux-gnu-addr2line"
+        // """
+        // // export ADDR2LINE=\$(/home/dev/manual_conda_envs/nextNEOpiENV/bin/x86_64-conda-linux-gnu-addr2line)
+        // // export AR=\$(/home/dev/manual_conda_envs/nextNEOpiENV/bin/x86_64-conda-linux-gnu-ar)
+        // /home/dev/utils/miniforge3/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         """
+        #! /bin/bash
+        
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         gatk --java-options ${JAVA_Xmx} BedToIntervalList \\
             -I ${BaitsBed} \\
             -O ${BaitsBed.baseName}.interval_list \\

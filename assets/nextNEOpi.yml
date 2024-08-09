@@ -26,7 +26,7 @@ dependencies:
     #   and that it is used in tensorflow, theano, and other key dependencies
   - conda-forge::theano=1.0.4 # it is unlikely that new versions of theano will be released
     #   verify that this is using numpy compiled against MKL (e.g., by the presence of -lmkl_rt in theano.config.blas.ldflags)
-  - defaults::tensorflow=1.15.0 # update only if absolutely necessary, as this may cause conflicts with other core dependencies
+  - tensorflow=1.14.0 # update only if absolutely necessary, as this may cause conflicts with other core dependencies
     #   verify that this is using numpy compiled against MKL (e.g., by checking tensorflow.pywrap_tensorflow.IsMklEnabled())
   - conda-forge::scipy=1.0.0 # do not update, this will break a scipy.misc.logsumexp import (deprecated in scipy=1.0.0) in pymc3=3.1
   - conda-forge::pymc3=3.1 # do not update, this will break gcnvkernel
@@ -62,4 +62,4 @@ dependencies:
 
   # pip installs should be avoided, as pip may not respect the dependencies found by the conda solver
   - pip:
-      - gatkPythonPackageArchive.zip
+      - /home/dev/utils/gatkPythonPackageArchive.zip
