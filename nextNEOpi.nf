@@ -421,7 +421,7 @@ nextNEOpiENV_setup_ch0 = Channel.value("OK")
 // Handle BAM input files. We need to convert BAMs to Fastq
 if(bamInput) {
     process check_PE {
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "$meta.sampleName : $meta.sampleType"
 
@@ -443,6 +443,9 @@ if(bamInput) {
 
         script:
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         check_pe.py $bam
         """
     }
@@ -451,7 +454,7 @@ if(bamInput) {
 
 
     process bam2fastq {
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "$meta.sampleName : $meta.sampleType"
 
@@ -483,6 +486,9 @@ if(bamInput) {
         meta.libType = libType
         if (libType == "PE")
             """
+            #! /bin/bash
+
+            source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
             samtools sort -@ ${task.cpus} -m ${STperThreadMem}G -l 0 -n ${bam} | \\
             samtools fastq \\
                 -@ ${task.cpus} \\
@@ -495,6 +501,9 @@ if(bamInput) {
             """
         else if (libType == "SE")
             """
+            #! /bin/bash
+
+            source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
             samtools fastq \\
                 -@ ${task.cpus} \\
                 -n \\
@@ -652,7 +661,7 @@ if (params.WES) {
 
 process 'preprocessIntervalList' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag 'preprocessIntervalList'
 
@@ -693,6 +702,9 @@ process 'preprocessIntervalList' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     if(params.WES)
         """
+        #! /bin/bash
+        
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         gatk PreprocessIntervals \\
             -R $RefFasta \\
             -L ${interval_list} \\
@@ -703,6 +715,9 @@ process 'preprocessIntervalList' {
         """
     else
         """
+        #! /bin/bash
+        
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         gatk --java-options ${JAVA_Xmx} ScatterIntervalsByNs \\
             --REFERENCE $RefFasta \\
             --OUTPUT_TYPE ACGT \\
@@ -713,7 +728,7 @@ process 'preprocessIntervalList' {
 // Splitting interval file in 20(default) files for scattering Mutect2
 process 'SplitIntervals' {
 
-    label 'nextNEOpiENV'
+    //label 'nextNEOpiENV'
 
     tag "SplitIntervals"
 
@@ -758,6 +773,9 @@ process 'SplitIntervals' {
     script:
     IntervalName = IntervalsList.baseName
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk SplitIntervals \\
@@ -777,7 +795,7 @@ process 'SplitIntervals' {
 // generate a padded tabix indexed region BED file for strelka
 process 'IntervalListToBed' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag 'BedFromIntervalList'
 
@@ -797,6 +815,9 @@ process 'IntervalListToBed' {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${JAVA_Xmx} IntervalListToBed \\
         -I ${paddedIntervalList} \\
         -O ${paddedIntervalList.baseName}.bed
@@ -809,7 +830,7 @@ process 'IntervalListToBed' {
 // convert scattered padded interval list to Bed file (used by varscan)
 process 'ScatteredIntervalListToBed' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag 'ScatteredIntervalListToBed'
 
@@ -840,6 +861,9 @@ process 'ScatteredIntervalListToBed' {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${JAVA_Xmx} IntervalListToBed \\
         -I ${IntervalsList} \\
         -O ${IntervalsList.baseName}.bed
@@ -1077,7 +1101,7 @@ dummy_ch.filter{
 // make uBAM
 process 'make_uBAM' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1101,6 +1125,9 @@ process 'make_uBAM' {
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
 
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
     gatk --java-options ${java_opts} FastqToSam \\
         --TMP_DIR ${tmpDir} \\
@@ -1117,7 +1144,7 @@ process 'make_uBAM' {
 // Aligning reads to reference, sort and index; create BAMs
 process 'Bwa' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1151,6 +1178,9 @@ process 'Bwa' {
     def sort_threads = (task.cpus.compareTo(8) == 1) ? 8 : task.cpus
     def SB_sort_mem =  Math.max((task.memory.toGiga() - 4), 1) + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     bwa mem \\
         -R "@RG\\tID:${read_group}\\tLB:${read_group}\\tSM:${read_group}\\tPL:ILLUMINA" \\
         -M ${RefFasta} \\
@@ -1172,7 +1202,7 @@ process 'Bwa' {
 // merge alinged BAM and uBAM
 process 'merge_uBAM_BAM' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1205,6 +1235,9 @@ process 'merge_uBAM_BAM' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk --java-options ${java_opts} MergeBamAlignment \\
@@ -1235,7 +1268,7 @@ process 'merge_uBAM_BAM' {
 // Mark duplicates with sambamba
 process 'MarkDuplicates' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1275,6 +1308,9 @@ process 'MarkDuplicates' {
     def JAVA_Xmx = '-Xmx4G'
     bam_out = [procSampleName + "_aligned_sort_mkdp.bam", procSampleName + "_aligned_sort_mkdp.bai"]
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
     sambamba markdup \\
         -t ${task.cpus} \\
@@ -1329,7 +1365,7 @@ if(params.WES) {
     // Generate HS metrics using picard
     process 'alignmentMetrics' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "$meta.sampleName : $meta.sampleType"
 
@@ -1360,6 +1396,9 @@ if(params.WES) {
         def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
         def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         mkdir -p ${tmpDir}
         gatk --java-options ${java_opts} CollectHsMetrics \\
             --TMP_DIR ${tmpDir} \\
@@ -1390,7 +1429,7 @@ if(params.WES) {
 */
 process 'scatterBaseRecalGATK4' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1440,6 +1479,9 @@ process 'scatterBaseRecalGATK4' {
     procSampleName = meta.sampleName + "_" + meta.sampleType
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
     gatk  --java-options ${JAVA_Xmx} BaseRecalibrator \\
         --tmp-dir ${tmpDir} \\
@@ -1456,7 +1498,7 @@ process 'scatterBaseRecalGATK4' {
 // gather scattered bqsr tables
 process 'gatherGATK4scsatteredBQSRtables' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1475,6 +1517,9 @@ process 'gatherGATK4scsatteredBQSRtables' {
     procSampleName = meta.sampleName + "_" + meta.sampleType
 
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk GatherBQSRReports \\
@@ -1487,7 +1532,7 @@ process 'gatherGATK4scsatteredBQSRtables' {
 // ApplyBQSR (GATK4): apply BQSR table to reads
 process 'scatterGATK4applyBQSRS' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1544,6 +1589,9 @@ process 'scatterGATK4applyBQSRS' {
                 procSampleName + "_" + intervals + "_recal4.bai"]
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
     gatk ApplyBQSR \\
         --java-options ${JAVA_Xmx} \\
@@ -1558,7 +1606,7 @@ process 'scatterGATK4applyBQSRS' {
 
 process 'GatherRecalBamFiles' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1594,6 +1642,9 @@ process 'GatherRecalBamFiles' {
     def JAVA_Xmx = "4G"
     def java_opts = '"-Xmx' + JAVA_Xmx + ' -XX:ParallelGCThreads=2"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     rm -f ${procSampleName}_gather.fifo
@@ -1617,7 +1668,7 @@ process 'GatherRecalBamFiles' {
 // GetPileupSummaries (GATK4): tabulates pileup metrics for inferring contamination
 process 'GetPileup' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName : $meta.sampleType"
 
@@ -1651,6 +1702,9 @@ process 'GetPileup' {
     script:
     procSampleName = meta.sampleName + "_" + meta.sampleType
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk GetPileupSummaries \\
@@ -1715,7 +1769,7 @@ if (have_GATK3) {
 */
 process 'Mutect2' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -1768,6 +1822,9 @@ process 'Mutect2' {
     def panel_of_normals = (pon.name != 'NO_FILE') ? "--panel-of-normals $pon" : ""
     def mk_pon_idx = (pon.name != 'NO_FILE') ? "tabix -f $pon" : ""
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     ${mk_pon_idx}
@@ -1789,7 +1846,7 @@ process 'Mutect2' {
 // Merge scattered Mutect2 vcfs
 process 'gatherMutect2VCFs' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -1831,6 +1888,9 @@ process 'gatherMutect2VCFs' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk --java-options ${java_opts} MergeVcfs \\
@@ -1874,7 +1934,7 @@ VariantFiltration (GATK4): filter calls based on INFO and FORMAT annotations
 */
 process 'FilterMutect2' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -1916,6 +1976,9 @@ process 'FilterMutect2' {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk CalculateContamination \\
@@ -1948,7 +2011,7 @@ process 'FilterMutect2' {
 */
 process 'HaploTypeCaller' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -1995,6 +2058,9 @@ process 'HaploTypeCaller' {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk --java-options ${JAVA_Xmx} HaplotypeCaller \\
@@ -2015,7 +2081,7 @@ process 'HaploTypeCaller' {
 */
 process 'CNNScoreVariants' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2052,6 +2118,9 @@ process 'CNNScoreVariants' {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk CNNScoreVariants \\
@@ -2072,7 +2141,7 @@ process 'CNNScoreVariants' {
 // Merge scattered filtered germline vcfs
 process 'MergeHaploTypeCallerGermlineVCF' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2099,6 +2168,9 @@ process 'MergeHaploTypeCallerGermlineVCF' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk --java-options ${java_opts} MergeVcfs \\
@@ -2114,7 +2186,7 @@ process 'MergeHaploTypeCallerGermlineVCF' {
 */
 process 'FilterGermlineVariantTranches' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2154,6 +2226,9 @@ process 'FilterGermlineVariantTranches' {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk FilterVariantTranches \\
@@ -2258,7 +2333,7 @@ if (have_GATK3) {
 
     process 'GatherRealignedBamFiles' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "$meta.sampleName : $meta.sampleType"
 
@@ -2290,6 +2365,9 @@ if (have_GATK3) {
         def JAVA_Xmx = "4G"
         def java_opts = '"-Xmx' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         mkdir -p ${tmpDir}
 
         rm -f ${procSampleName}_gather.fifo
@@ -2364,7 +2442,7 @@ if (have_GATK3) {
 
 process 'VarscanSomaticScattered' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2407,6 +2485,9 @@ process 'VarscanSomaticScattered' {
     // varscan vcf (? wtf). Non ACGT seems to cause MergeVCF (picard) crashing
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     rm -f ${meta.sampleName}_${intervals}_mpileup.fifo
     mkfifo ${meta.sampleName}_${intervals}_mpileup.fifo
     samtools mpileup \\
@@ -2442,7 +2523,7 @@ process 'VarscanSomaticScattered' {
 // Merge scattered Varscan vcfs
 process 'gatherVarscanVCFs' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2484,6 +2565,9 @@ process 'gatherVarscanVCFs' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk --java-options ${java_opts} MergeVcfs \\
@@ -2504,7 +2588,7 @@ process 'gatherVarscanVCFs' {
 // Filter variants by somatic status and confidences
 process 'ProcessVarscan' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2544,6 +2628,9 @@ process 'ProcessVarscan' {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     varscan ${JAVA_Xmx} processSomatic \\
         ${snp} \\
         --min-tumor-freq ${params.min_tumor_freq} \\
@@ -2564,7 +2651,7 @@ process 'ProcessVarscan' {
 */
 process 'FilterVarscan' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2614,6 +2701,9 @@ process 'FilterVarscan' {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     cat ${snpSomaticHc} | \\
     awk '{if (!/^#/) { x = length(\$5) - 1; print \$1,\$2,(\$2+x); }}' | \\
     bam-readcount \\
@@ -2649,7 +2739,7 @@ process 'FilterVarscan' {
 */
 process 'MergeAndRenameSamplesInVarscanVCF' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -2681,6 +2771,9 @@ process 'MergeAndRenameSamplesInVarscanVCF' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     bgzip -c ${VarScanSNP_VCF} > ${VarScanSNP_VCF}.gz
@@ -2788,7 +2881,7 @@ if(have_Mutect1) {
     // Merge scattered Mutect1 vcfs
     process 'gatherMutect1VCFs' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "$meta.sampleName"
 
@@ -2846,6 +2939,9 @@ if(have_Mutect1) {
         def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
         def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         mkdir -p ${tmpDir}
 
         gatk --java-options ${java_opts} MergeVcfs \\
@@ -3050,7 +3146,7 @@ process StrelkaSomatic {
 }
 
 process 'finalizeStrelkaVCF' {
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -3093,7 +3189,9 @@ process 'finalizeStrelkaVCF' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
 
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${java_opts} MergeVcfs \\
         --TMP_DIR ${tmpDir} \\
         -I ${somatic_snvs[0]} \\
@@ -3136,7 +3234,7 @@ process 'finalizeStrelkaVCF' {
 */
 process 'mkHCsomaticVCF' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "$meta.sampleName"
 
@@ -3195,6 +3293,9 @@ process 'mkHCsomaticVCF' {
     def confirming_caller_files = callerMap.values().join(" ")
     def confirming_caller_names = callerMap.keySet().join(" ")
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     make_hc_vcf.py \\
         --primary ${primary_caller_file} \\
         --primary_name ${params.primaryCaller} \\
@@ -3380,7 +3481,7 @@ process 'VEPtab' {
 // combined germline and somatic variants
 process 'mkCombinedVCF' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -3420,6 +3521,9 @@ process 'mkCombinedVCF' {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkdir -p ${tmpDir}
 
     gatk --java-options ${JAVA_Xmx} SelectVariants \\
@@ -3727,7 +3831,7 @@ AlleleCounter_out_ch = AlleleCounter_out_ch0.tumor.join(AlleleCounter_out_ch0.no
 // https://bitbucket.org/malinlarsson/somatic_wgs_pipeline
 process ConvertAlleleCounts {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -3756,6 +3860,9 @@ process ConvertAlleleCounts {
     script:
     def sex = (meta.sex == "None") ? "XY" : meta.sex
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     Rscript ${baseDir}/bin/convertAlleleCounts.r \\
         ${meta.sampleName} ${alleleCountTumor} ${meta.sampleName}_normal ${alleleCountNormal} ${sex}
     """
@@ -3765,7 +3872,7 @@ process ConvertAlleleCounts {
 // https://bitbucket.org/malinlarsson/somatic_wgs_pipeline
 process 'Ascat' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -3797,6 +3904,9 @@ process 'Ascat' {
     script:
     def sex = (meta.sex == "None") ? "XY" : meta.sex
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     # get rid of "chr" string if there is any
     for f in *BAF *LogR; do sed 's/chr//g' \$f > tmpFile; mv tmpFile \$f;done
     Rscript ${baseDir}/bin/run_ascat.r ${bafTumor} ${logrTumor} ${bafNormal} ${logrNormal} ${meta.sampleName} ${baseDir} ${acLociGC} ${sex}
@@ -3808,7 +3918,7 @@ process 'Ascat' {
 if (params.controlFREEC) {
     process 'Mpileup4ControFREEC' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "$meta.sampleName - $meta.sampleType"
 
@@ -3841,6 +3951,9 @@ if (params.controlFREEC) {
 
         script:
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         samtools mpileup \\
             -q 1 \\
             -f ${RefFasta} \\
@@ -3857,7 +3970,7 @@ if (params.controlFREEC) {
     // Merge scattered pileups
     process 'gatherMpileups' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "${meta.sampleName} : ${meta.sampleType}"
 
@@ -3878,6 +3991,9 @@ if (params.controlFREEC) {
         script:
         outFileName = (meta.sampleType == "tumor_DNA") ? meta.sampleName + "_tumor.pileup.gz" : meta.sampleName + "_normal.pileup.gz"
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         scatters=`ls -1v *.pileup.gz`
         zcat \$scatters | \\
         bgzip --threads ${task.cpus} -c > ${outFileName}
@@ -4094,7 +4210,7 @@ process 'SequenzaUtils' {
 
 process gatherSequenzaInput {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -4119,6 +4235,9 @@ process gatherSequenzaInput {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     first=1
     scatters=`ls -1v *_${meta.sampleName}_seqz.gz`
     for f in \$scatters
@@ -4477,7 +4596,7 @@ clonality_input = Ascat_out_Clonality_ch1.join(Sequenza_out_Clonality_ch1, by: [
 
 process 'Clonality' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -4531,6 +4650,9 @@ process 'Clonality' {
 
     if (ascatOK || sequenzaOK)
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         mkCCF_input.py \\
             --PatientID ${meta.sampleName}_tumor \\
             --vcf ${hc_vep_vcf[0]} \\
@@ -4552,7 +4674,7 @@ process 'Clonality' {
 // mutational burden all variants all covered positions
 process 'MutationalBurden' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -4593,6 +4715,9 @@ process 'MutationalBurden' {
         ccf_opts =  "--ccf ${ccf_file} --ccf_clonal_thresh ${params.CCFthreshold} --p_clonal_thresh ${params.pClonal}"
     }
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mutationalLoad.py \\
         --normal_bam ${Normalbam[0]} \\
         --tumor_bam ${Tumorbam[0]} \\
@@ -4608,7 +4733,7 @@ process 'MutationalBurden' {
 // mutational burden coding variants coding (exons) covered positions
 process 'MutationalBurdenCoding' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -4650,6 +4775,9 @@ process 'MutationalBurdenCoding' {
         ccf_opts =  "--ccf ${ccf_file} --ccf_clonal_thresh ${params.CCFthreshold} --p_clonal_thresh ${params.pClonal}"
     }
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mutationalLoad.py \\
         --normal_bam ${Normalbam[0]} \\
         --tumor_bam ${Tumorbam[0]} \\
@@ -4672,7 +4800,7 @@ process 'MutationalBurdenCoding' {
 
 process 'mhc_extract' {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -4717,6 +4845,9 @@ process 'mhc_extract' {
 
     if(meta.libType == "SE")
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         rm -f unmapped_bam mhc_mapped_bam R.fastq
         mkfifo unmapped_bam
         mkfifo mhc_mapped_bam
@@ -4737,6 +4868,9 @@ process 'mhc_extract' {
         """
     else
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         rm -f unmapped_bam mhc_mapped_bam R1.fastq R2.fastq
         mkfifo unmapped_bam
         mkfifo mhc_mapped_bam
@@ -4777,7 +4911,7 @@ if (run_OptiType) {
 
     process 'pre_map_hla' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "${meta.sampleName}"
 
@@ -4815,11 +4949,17 @@ if (run_OptiType) {
 
         if (meta.libType == "SE")
             """
+            #! /bin/bash
+
+            source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
             yara_mapper -e 3 -t $yara_cpus -f bam ${yaraIdx} ${reads} | \\
                 samtools view -@ $samtools_cpus -h -F 4 -b1 -o dna_mapped_1.bam
             """
         else
             """
+            #! /bin/bash
+
+            source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
             rm -f R1 R2
             mkfifo R1 R2
             yara_mapper -e 3 -t $yara_cpus -f bam ${yaraIdx} ${reads} | \\
@@ -4843,7 +4983,7 @@ if (run_OptiType) {
 
     process 'OptiType' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "${meta.sampleName}"
 
@@ -4867,6 +5007,10 @@ if (run_OptiType) {
 
         script:
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/Optitype
+        python --version
         OPTITYPE="\$(readlink -f \$(which OptiTypePipeline.py))"
         \$OPTITYPE -i ${reads} -e 1 -b 0.009 --dna -o ./tmp && \\
         mv ./tmp/*/*_result.tsv ./${meta.sampleName}_optitype_result.tsv && \\
@@ -4878,7 +5022,7 @@ if (run_OptiType) {
     if (! have_RNA_tag_seq) {
         process 'pre_map_hla_RNA' {
 
-            label 'nextNEOpiENV'
+            // label 'nextNEOpiENV'
 
             tag "${meta.sampleName}"
 
@@ -4918,11 +5062,17 @@ if (run_OptiType) {
             // check if single end
             if (meta.libType == "SE")
                 """
+                #! /bin/bash
+
+                source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
                 yara_mapper -e 3 -t $yara_cpus -f bam ${yaraIdx} ${reads_RNA} | \\
                     samtools view -@ $samtools_cpus -h -F 4 -b1 -o rna_mapped_1.bam
                 """
             else
                 """
+                #! /bin/bash
+
+                source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
                 rm -f R1 R2
                 mkfifo R1 R2
                 yara_mapper -e 3 -t $yara_cpus -f bam ${yaraIdx} ${reads_RNA} | \\
@@ -4937,7 +5087,7 @@ if (run_OptiType) {
 
         process 'OptiType_RNA' {
 
-            label 'nextNEOpiENV'
+            // label 'nextNEOpiENV'
 
             tag "${meta.sampleName}"
 
@@ -4963,6 +5113,10 @@ if (run_OptiType) {
             def read_count_R1 = "samtools view -c ${reads[0]}"
             def read_count_R2 = (meta.libType == "PE") ? "samtools view -c ${reads[1]}" : ""
             """
+            #! /bin/bash
+
+            source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/Optitype
+            python --version
             OPTITYPE="\$(readlink -f \$(which OptiTypePipeline.py))"
             MHC_MAPPED_R1=\$($read_count_R1)
             MHC_MAPPED_R2=\$($read_count_R2)
@@ -5164,7 +5318,7 @@ batch_custom_HLA_data_ch = batch_custom_HLA_data_ch.map{
 
 process get_vhla {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -5214,6 +5368,9 @@ process get_vhla {
 
     def pVACseqAlleles = baseDir.toRealPath()  + "/assets/pVACseqAlleles.txt"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     # merging script
     HLA_parser.py \\
         ${optitype_hlas} \\
@@ -5402,7 +5559,7 @@ Add the gene ID (required by vcf-expression-annotator) to the TPM file
 */
 process add_geneID {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -5423,6 +5580,9 @@ process add_geneID {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     NameToID.py -i ${tpm} -a ${AnnoFile} -o .
     """
 }
@@ -5557,16 +5717,11 @@ if(!iedb_chck_file.exists() || iedb_chck_file.isEmpty()) {
 
         CWD=`pwd`
         cd /opt/iedb/
-        rm -f $mhci_file
-        wget $iedb_MHCI_url
         tar -xzvf $mhci_file
         cd mhc_i
         bash -c "./configure"
         cd /opt/iedb/
-        rm -f $mhci_file
 
-        rm -f $mhcii_file
-        wget $iedb_MHCII_url
         tar -xzvf $mhcii_file
         #### ATTENTION: IEDB_MHC_II-3.1.8.tar.gz "python configure.py"
         ####            returns an assertion error in the unittest needs
@@ -5574,10 +5729,8 @@ if(!iedb_chck_file.exists() || iedb_chck_file.isEmpty()) {
         # cd mhc_ii
         # bash -c "python ./configure.py"
         cd /opt/iedb/
-        rm $mhcii_file
 
         export MHCFLURRY_DATA_DIR=/opt/mhcflurry_data
-        mhcflurry-downloads fetch
 
         cd \$CWD
         echo "OK" > ${iedb_chck_file_name}
@@ -5860,7 +6013,7 @@ hlahd_mixMHC2_pred_ch0 = hlahd_mixMHC2_pred_ch0.map{
 if(have_HLAHD) {
     process 'pepare_mixMHC2_seq' {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "${meta.sampleName}"
 
@@ -5891,6 +6044,9 @@ if(have_HLAHD) {
         def supported_list = baseDir.toRealPath() + "/assets/hlaii_supported.txt"
         def model_list     = baseDir.toRealPath() + "/assets/hlaii_models.txt"
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         pepChopper.py \\
             --pep_len ${params.mhcii_epitope_len.split(",").join(" ")} \\
             --fasta_in ${long_peptideSeq_fasta} \\
@@ -5949,7 +6105,7 @@ if(have_HLAHD) {
 
     process mixMHC2pred {
 
-        label 'nextNEOpiENV'
+        // label 'nextNEOpiENV'
 
         tag "${meta.sampleName}"
 
@@ -5978,6 +6134,9 @@ if(have_HLAHD) {
 
         if(alleles.length() > 0)
             """
+            #! /bin/bash
+
+            source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
             ${mixmhc2pred_target}/MixMHC2pred_unix \\
                 -i ${mut_peps} \\
                 -o ${meta.sampleName}_mixMHC2pred.tsv \\
@@ -6014,7 +6173,7 @@ Clonality_out_ch0 = Clonality_out_ch0.map{
 
 process addCCF {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -6060,6 +6219,9 @@ process addCCF {
     mhc_class = (epitopes.baseName.indexOf("MHCII") >= 0) ? "II" : "I"
     if (ascatOK || sequenzaOK)
         """
+        #! /bin/bash
+
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         add_CCF.py \\
             --neoepitopes ${epitopes} \\
             --ccf ${CCF} \\
@@ -6090,7 +6252,7 @@ epitopes_fasta_in_ch = addCCF_out_ch.mix(Neofuse_results_ch1)
 
 process make_epitopes_fasta {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -6119,6 +6281,9 @@ process make_epitopes_fasta {
     script:
     outfile = epitopes.baseName + "_epitopes.fasta"
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     make_peptide_fasta.py \\
         --epitope_caller ${caller} \\
         --fasta ${outfile} \\
@@ -6172,7 +6337,7 @@ process blast_epitopes {
 
 process add_blast_hits {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -6212,6 +6377,9 @@ process add_blast_hits {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     parse_blast_result.py \\
         --blast_result ${blast_result} \\
         --epitope_file ${epitopes} \\
@@ -6226,7 +6394,7 @@ process add_blast_hits {
 
 process csin {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -6253,6 +6421,9 @@ process csin {
     def mhc_i_idx = mhc_class.indexOf("Class_I")
     def mhc_ii_idx = mhc_class.indexOf("Class_II")
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     CSiN.py --MHCI_tsv ${all_epitopes[mhc_i_idx]} \\
         --MHCII_tsv ${all_epitopes[mhc_ii_idx]} \\
         --rank $params.csin_rank \\
@@ -6262,8 +6433,9 @@ process csin {
     """
 }
 
-igs_chck_file = file(workflow.workDir + "/.igs_install_ok.chck")
-igs_target = workflow.workDir + "/IGS"
+igs_chck_file = file(params.resourcesBaseDir + "/.igs_install_ok.chck")
+// igs_target = workflow.workDir + "/IGS"
+igs_target = params.resourcesBaseDir + "/IGS" 
 if(( ! igs_chck_file.exists() || igs_chck_file.isEmpty()) && params.IGS == "") {
     process install_IGS {
 
@@ -6278,11 +6450,6 @@ if(( ! igs_chck_file.exists() || igs_chck_file.isEmpty()) && params.IGS == "") {
 
         script:
         """
-        mkdir -p ${igs_target} && \\
-        curl -sLk ${params.IGS_script_url} -o ${igs_target}/NeoAg_immunogenicity_predicition_GBM.R && \\
-        curl -sLk ${params.IGS_model_url} -o ${igs_target}/Final_gbm_model.rds && \\
-        patch -p0 ${igs_target}/NeoAg_immunogenicity_predicition_GBM.R ${baseDir}/assets/NeoAg_immunogenicity_predicition_GBM.patch && \\
-        chmod +x ${igs_target}/NeoAg_immunogenicity_predicition_GBM.R  && \\
         echo "OK" > .igs_install_ok.chck && \\
         cp -f .igs_install_ok.chck ${igs_chck_file}
         """
@@ -6466,7 +6633,7 @@ sample_info_tmb_coding = sample_info_tmb_coding.map{
 
 process collectSampleInfo {
 
-    label 'nextNEOpiENV'
+    // label 'nextNEOpiENV'
 
     tag "${meta.sampleName}"
 
@@ -6490,6 +6657,9 @@ process collectSampleInfo {
 
     script:
     """
+    #! /bin/bash
+
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     mkSampleInfo.py \\
         --sample_name ${meta.sampleName} \\
         --csin ${csin} \\
