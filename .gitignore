@@ -33,3 +33,4 @@ data/
 .license_accepted.chck
 results/
 bin/mixcr.jar
+*.chck
