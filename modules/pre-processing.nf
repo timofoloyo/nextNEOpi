@@ -1,3 +1,43 @@
+import org.yaml.snakeyaml.Yaml
+import java.nio.file.Files
+
+def get_publishMode(d, mode) {
+    def req_mode = mode
+
+    if (req_mode != "auto" && req_mode != "link") {
+        return mode
+    }
+
+    // default to copy
+    mode = "copy"
+
+    file(d).mkdirs()
+
+    testFile = file(workflow.workDir + "/.test")
+    testFile.write("test")
+
+    testLink = file(d + "/.test")
+
+    // let's see if we can create hard links
+    try {
+        Files.createLink(testLink, testFile);
+        mode = "link"
+    } catch (IOException e) {
+        if (req_mode == "link") {
+            System.err.println("WARNING: using copy as publish mode, reason: " + e)
+        }
+    }
+
+    testLink.delete()
+    testFile.delete()
+
+    return mode
+}
+
+publishDirMode = get_publishMode(params.outputDir, params.publishDirMode)
+
+padding = params.readLength + 100
+
 // Handle BAM input files. We need to convert BAMs to Fastq
 
 process check_PE {
@@ -13,6 +53,8 @@ process check_PE {
 
     script:
     """
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     check_pe.py $bam
     """
 }
@@ -37,6 +79,9 @@ process bam2fastq {
     meta.libType = libType
     if (libType == "PE")
         """
+        #! /bin/bash
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+
         samtools sort -@ ${task.cpus} -m ${STperThreadMem}G -l 0 -n ${bam} | \\
         samtools fastq \\
             -@ ${task.cpus} \\
@@ -66,7 +111,7 @@ process merge_fastq {
         enabled: params.fullOutput
 
     input:
-    tuple meta, path("R1/R1.*"), path("R2/R2.*")
+    tuple val(meta), path("R1/R1.*"), path("R2/R2.*")
 
     output:
     tuple val(meta), path("*_R{1,2}.merged.fastq.gz")
@@ -95,6 +140,8 @@ process regions_bed_to_interval_list {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${JAVA_Xmx} BedToIntervalList \\
         -I ${RegionsBed} \\
         -O ${RegionsBed.baseName}.interval_list \\
@@ -115,6 +162,8 @@ process baits_bed_to_interval_list {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${JAVA_Xmx} BedToIntervalList \\
         -I ${BaitsBed} \\
         -O ${BaitsBed.baseName}.interval_list \\
@@ -142,23 +191,28 @@ process preprocess_interval_list {
     script:
     outFileName = (params.WES) ? interval_list.baseName + "_merged_padded.interval_list" : "wgs_ScatterIntervalsByNs.interval_list"
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
-    if(params.WES)
+    if(params.WES){
         """
+        #! /bin/bash
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         gatk PreprocessIntervals \\
-            -R $RefFasta \\
+            -R ${RefFasta} \\
             -L ${interval_list} \\
             --bin-length 0 \\
             --padding ${padding} \\
             --interval-merging-rule OVERLAPPING_ONLY \\
             -O ${outFileName}
         """
-    else
+    } else {
         """
+        #! /bin/bash
+        source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
         gatk --java-options ${JAVA_Xmx} ScatterIntervalsByNs \\
             --REFERENCE $RefFasta \\
             --OUTPUT_TYPE ACGT \\
             --OUTPUT ${outFileName}
         """
+    }
 }
 
 process split_intervals {
@@ -184,10 +238,12 @@ process split_intervals {
     script:
     IntervalName = IntervalsList.baseName
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
 
     gatk SplitIntervals \\
-        --tmp-dir ${tmpDir} \\
+        --tmp-dir ${params.tmpDir} \\
         -R ${RefFasta}  \\
         -scatter ${x} \\
         --interval-merging-rule ALL \\
@@ -217,6 +273,8 @@ process interval_list_to_bed {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${JAVA_Xmx} IntervalListToBed \\
         -I ${paddedIntervalList} \\
         -O ${paddedIntervalList.baseName}.bed
@@ -247,6 +305,8 @@ process scattered_interval_list_to_bed {
     script:
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     gatk --java-options ${JAVA_Xmx} IntervalListToBed \\
         -I ${IntervalsList} \\
         -O ${IntervalsList.baseName}.bed
@@ -416,9 +476,11 @@ process make_ubam {
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
 
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
     gatk --java-options ${java_opts} FastqToSam \\
-        --TMP_DIR ${tmpDir} \\
+        --TMP_DIR ${params.tmpDir} \\
         --MAX_RECORDS_IN_RAM ${params.maxRecordsInRam} \\
         ${reads_in} \\
         --READ_GROUP_NAME ${read_group} \\
@@ -455,6 +517,8 @@ process bwa {
     def sort_threads = (task.cpus.compareTo(8) == 1) ? 8 : task.cpus
     def SB_sort_mem =  Math.max((task.memory.toGiga() - 4), 1) + "G"
     """
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
     bwa mem \\
         -R "@RG\\tID:${read_group}\\tLB:${read_group}\\tSM:${read_group}\\tPL:ILLUMINA" \\
         -M ${RefFasta} \\
@@ -464,7 +528,7 @@ process bwa {
     samtools view -@2 -Shbu - | \\
     sambamba sort \\
         --sort-picard \\
-        --tmpdir=${tmpDir} \\
+        --tmpdir=${params.tmpDir} \\
         -m ${SB_sort_mem} \\
         -l 6 \\
         -t ${sort_threads} \\
@@ -500,10 +564,12 @@ process merge_ubam_bam {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
 
     gatk --java-options ${java_opts} MergeBamAlignment \\
-        --TMP_DIR ${tmpDir} \\
+        --TMP_DIR ${params.tmpDir} \\
         --VALIDATION_STRINGENCY SILENT \\
         --EXPECTED_ORIENTATIONS FR \\
         --ATTRIBUTES_TO_RETAIN X0 \\
@@ -550,10 +616,12 @@ process mark_duplicates {
     def JAVA_Xmx = '-Xmx4G'
     bam_out = [procSampleName + "_aligned_sort_mkdp.bam", procSampleName + "_aligned_sort_mkdp.bai"]
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
     sambamba markdup \\
         -t ${task.cpus} \\
-        --tmpdir ${tmpDir} \\
+        --tmpdir ${params.tmpDir} \\
         --hash-table-size=${params.SB_hash_table_size } \\
         --overflow-list-size=${params.SB_overflow_list_size} \\
         --io-buffer-size=${params.SB_io_buffer_size} \\
@@ -566,7 +634,7 @@ process mark_duplicates {
         -l 0 \\
         /dev/stdin | \\
     gatk --java-options ${JAVA_Xmx} SetNmMdAndUqTags \\
-        --TMP_DIR ${tmpDir} \\
+        --TMP_DIR ${params.tmpDir} \\
         -R ${RefFasta} \\
         -I /dev/stdin \\
         -O ${procSampleName}_aligned_sort_mkdp.bam \\
@@ -599,9 +667,11 @@ process alignment_metrics {
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     def java_opts = '"' + JAVA_Xmx + ' -XX:ParallelGCThreads=' + task.cpus + '"'
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
     gatk --java-options ${java_opts} CollectHsMetrics \\
-        --TMP_DIR ${tmpDir} \\
+        --TMP_DIR ${params.tmpDir} \\
         --INPUT ${bam[0]} \\
         --OUTPUT ${procSampleName}.HS.metrics.txt \\
         -R ${RefFasta} \\
@@ -609,7 +679,7 @@ process alignment_metrics {
         --TARGET_INTERVALS ${IntervalsList} \\
         --PER_TARGET_COVERAGE ${procSampleName}.perTarget.coverage.txt && \\
     gatk --java-options ${java_opts} CollectAlignmentSummaryMetrics \\
-        --TMP_DIR ${tmpDir} \\
+        --TMP_DIR ${params.tmpDir} \\
         --INPUT ${bam[0]} \\
         --OUTPUT ${procSampleName}.AS.metrics.txt \\
         -R ${RefFasta} &&
@@ -640,9 +710,11 @@ process scatter_base_recal_gatk4 {
     procSampleName = meta.sampleName + "_" + meta.sampleType
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
     gatk  --java-options ${JAVA_Xmx} BaseRecalibrator \\
-        --tmp-dir ${tmpDir} \\
+        --tmp-dir ${params.tmpDir} \\
         -I ${bam[0]} \\
         -R ${RefFasta} \\
         -L ${intervals} \\
@@ -674,7 +746,9 @@ process gather_gatk4_scsattered_bqsr_tables {
     procSampleName = meta.sampleName + "_" + meta.sampleType
 
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
 
     gatk GatherBQSRReports \\
         -I ${bqsr_table.join(" -I ")} \\
@@ -689,7 +763,7 @@ process scatter_gatk4_apply_bqsrs {
     tag "$meta.sampleName : $meta.sampleType"
 
     input:
-    tuple meta, path(bam), path(bqsr_table), path(intervals)
+    tuple val(meta), path(bam), path(bqsr_table), path(intervals)
 
     tuple path(RefFasta), path(RefIdx), path(RefDict)
 
@@ -707,10 +781,12 @@ process scatter_gatk4_apply_bqsrs {
                 procSampleName + "_" + intervals + "_recal4.bai"]
     def JAVA_Xmx = '-Xmx' + task.memory.toGiga() + "G"
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
     gatk ApplyBQSR \\
         --java-options ${JAVA_Xmx} \\
-        --tmp-dir ${tmpDir} \\
+        --tmp-dir ${params.tmpDir} \\
         -I ${bam[0]} \\
         -R ${RefFasta} \\
         -L ${intervals} \\
@@ -742,12 +818,14 @@ process gather_recal_bam_files {
     def JAVA_Xmx = "4G"
     def java_opts = '"-Xmx' + JAVA_Xmx + ' -XX:ParallelGCThreads=2"'
     """
-    mkdir -p ${tmpDir}
+    #! /bin/bash
+    source \$(conda info --json | awk '/conda_prefix/ { gsub(/"|,/, "", \$2); print \$2 }')/bin/activate /home/dev/manual_conda_envs/nextNEOpiENV
+    mkdir -p ${params.tmpDir}
 
     rm -f ${procSampleName}_gather.fifo
     mkfifo ${procSampleName}_gather.fifo
     gatk --java-options ${java_opts} GatherBamFiles \\
-        --TMP_DIR ${tmpDir} \\
+        --TMP_DIR ${params.tmpDir} \\
         -I ${bam.join(" -I ")} \\
         -O ${procSampleName}_gather.fifo \\
         --CREATE_INDEX false \\

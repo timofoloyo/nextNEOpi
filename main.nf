@@ -1,5 +1,8 @@
 nextflow.enable.dsl=2
 
+import org.yaml.snakeyaml.Yaml
+import java.nio.file.Files
+
 include {
   check_PE; bam2fastq; merge_fastq; regions_bed_to_interval_list;
   baits_bed_to_interval_list; preprocess_interval_list; split_intervals;
@@ -270,38 +273,7 @@ def remove_from_meta(ch, keys=[], keep=false) {
 }
 */
 
-def get_publishMode(d, mode) {
-    def req_mode = mode
 
-    if (req_mode != "auto" && req_mode != "link") {
-        return mode
-    }
-
-    // default to copy
-    mode = "copy"
-
-    file(d).mkdirs()
-
-    testFile = file(workflow.workDir + "/.test")
-    testFile.write("test")
-
-    testLink = file(d + "/.test")
-
-    // let's see if we can create hard links
-    try {
-        Files.createLink(testLink, testFile);
-        mode = "link"
-    } catch (IOException e) {
-        if (req_mode == "link") {
-            System.err.println("WARNING: using copy as publish mode, reason: " + e)
-        }
-    }
-
-    testLink.delete()
-    testFile.delete()
-
-    return mode
- }
 
 def helpMessage() {
     log.info ""
@@ -345,11 +317,8 @@ def helpMessage() {
 }
 
 
+
 workflow {
-
-  import org.yaml.snakeyaml.Yaml
-  import java.nio.file.Files
-
   log.info ""
   log.info " NEXTFLOW ~  version ${workflow.nextflow.version} ${workflow.nextflow.build}"
   log.info "-------------------------------------------------------------------------"
@@ -490,7 +459,7 @@ workflow {
   // End Summary
 
   // determine the publishDirMode
-  def publishDirMode = get_publishMode(params.outputDir, params.publishDirMode)
+//   publishDirMode = get_publishMode(params.outputDir, params.publishDirMode)
 
   // Check if we got a batch file
   params.batchFile = null
@@ -658,7 +627,7 @@ workflow {
   pon_file = file(params.mutect2ponFile)
 
   scatter_count = Channel.from(params.scatter_count)
-  padding = params.readLength + 100
+//   padding = params.readLength + 100
 
   MiXMHC2PRED   = ( params.MiXMHC2PRED != "" ) ? file(params.MiXMHC2PRED) : ""
 
@@ -937,7 +906,7 @@ workflow {
 
 
   // Aligning reads to reference, sort and index; create BAMs
-  ref_bwa_ch = Channel.value([reference.RefFasta, reference.RefIdx, reference.RefDict, reference.BwaRef]
+  ref_bwa_ch = Channel.value([reference.RefFasta, reference.RefIdx, reference.RefDict, reference.BwaRef])
   bwa(reads_BAM_ch, ref_bwa_ch, nextNEOpiENV_setup_ch0)
   BWA_out_ch0 = bwa.out
 
@@ -950,10 +919,12 @@ workflow {
   // Mark duplicates with sambamba
   mark_duplicates(uBAM_BAM_out_ch, ref_fasta_ch, nextNEOpiENV_setup_ch0)
   MarkDuplicates_out_ch = mark_duplicates.out
+  MarkDuplicates_out_ch3 = mark_duplicates.out
+  MarkDuplicates_out_ch4 = mark_duplicates.out
 
 
   // prepare channel for mhc_extract -> hlad-hd, optitype
-  MarkDuplicates_out_ch.filter {
+  MarkDuplicates_out_ch3.filter {
                                       it[0].sampleType == "tumor_DNA"
                                   }
                                   .set { MarkDuplicatesTumor_out_ch0 }
@@ -961,7 +932,7 @@ workflow {
   // spilt T/N and remove differing/unused info from meta for joining
   // this prepares T/N channel for CNVkit
 
-  MarkDuplicates_out_ch.branch {
+  MarkDuplicates_out_ch4.branch {
           meta_ori, bam ->
               def meta = meta_ori.clone()
               tumor : meta.sampleType == "tumor_DNA"
@@ -971,15 +942,18 @@ workflow {
               normal: meta.sampleType == "normal_DNA"
                   meta.remove('sampleType')
                   return [meta, bam]
-  }.set{ MarkDuplicates_out_ch }
+  }.set{ MarkDuplicates_out_ch4 }
 
-  MarkDuplicates_out_CNVkit_ch0 = MarkDuplicates_out_ch.tumor.join(MarkDuplicates_out_ch.normal, by:[0])
+  MarkDuplicates_out_CNVkit_ch0 = MarkDuplicates_out_ch4.tumor.join(MarkDuplicates_out_ch4.normal, by:[0])
 
 
   if (params.WES) {
     // Generate HS metrics using picard
     ref_alig_ch = Channel.value([reference.RefFasta, reference.RefIdx])
-    alignment_metrics(MarkDuplicates_out_ch, ref_alig_ch, BaitsBedToIntervalList_out_ch0, RegionsBedToIntervalList_out_ch, nextNEOpiENV_setup_ch0)
+    alignment_metrics(
+        MarkDuplicates_out_ch, ref_alig_ch, BaitsBedToIntervalList_out_ch0, 
+        RegionsBedToIntervalList_out_ch, nextNEOpiENV_setup_ch0
+    )
     alignmentMetrics_ch = alignment_metrics.out
   } else {
     // bogus channel for multiqc
@@ -1001,7 +975,7 @@ workflow {
       database.KnownIndelsIdx ]
   )
   scatter_base_recal_gatk4(
-    MarkDuplicates_out_ch.combine(SplitIntervals_out_scatterBaseRecalTumorGATK4_ch.flatten()),
+    MarkDuplicates_out_ch.combine(SplitIntervals_out_ch.flatten()),
     ref_fasta_ch, bqsr_db_ch, nextNEOpiENV_setup_ch0
   )
   scatterBaseRecalGATK4_out_ch0 = scatter_base_recal_gatk4.out
@@ -1018,7 +992,7 @@ workflow {
   scatter_gatk4_apply_bqsrs(
     MarkDuplicates_out_ch.join(gatherBQSRtables_out_ch0, by: [0])
     .combine(
-        SplitIntervals_out_scatterTumorGATK4applyBQSRS_ch.flatten()
+        SplitIntervals_out_ch.flatten()
     ),
     ref_fasta_ch, bqsr_db_ch, nextNEOpiENV_setup_ch0
   )
